@@ -4,7 +4,7 @@ use std::sync::{Mutex};
 use rayon::prelude::*;
 use tokio::time::Instant;
 
-const N: usize = 6;
+const N: usize = 4;
 
 fn print_board(board: &[char]) {
     println!();
