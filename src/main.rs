@@ -1,6 +1,6 @@
 use text_io::read;
 use std::cmp;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex};
 use rayon::prelude::*;
 use tokio::time::Instant;
 
@@ -58,7 +58,7 @@ fn is_end(board: &Vec<char>) -> bool {
         sol = 0;
 
         let mut x = 1 + (ze - 1) * N;
-        for i in 1..(N + 1) {
+        for _i in 1..(N + 1) {
             if board[x] == 'X' {
                 sol += 1;
             }
@@ -75,7 +75,7 @@ fn is_end(board: &Vec<char>) -> bool {
         sol = 0;
 
         let mut x = 1 + (sp - 1);
-        for i in 1..(N + 1) {
+        for _i in 1..(N + 1) {
             if board[x] == 'X' {
                 sol += 1
             }
@@ -87,7 +87,7 @@ fn is_end(board: &Vec<char>) -> bool {
         }
     }
 
-    return false;
+    false
 }
 
 fn is_board_full(board:  &Vec<char>) -> bool {
@@ -124,14 +124,14 @@ fn player_move(board: &mut Vec<char>) {
 }
 
 fn comp_move(board: &Vec<char>) -> usize {
-    let possible_moves: Vec<_> = board.into_iter().enumerate().filter(|&(x, c)| *c == ' ' && x > 0).collect();
+    let possible_moves: Vec<_> = board.iter().enumerate().filter(|&(x, c)| *c == ' ' && x > 0).collect();
 
     println!("Mögliche Züge für die \"KI\": {:?}", possible_moves);
 
     let best_score = Mutex::new(i32::MIN);
     let best_move = Mutex::new(0);
 
-    let mut board_copy = board.clone();
+    let board_copy = board.clone();
 
     possible_moves.into_par_iter().for_each(|cmove| {
 
@@ -156,22 +156,22 @@ fn comp_move(board: &Vec<char>) -> usize {
 
     let return_value = best_move.lock().unwrap();
 
-    return *return_value;
+    *return_value
 }
 
-fn minimax_alpha_beta(currBoard: &Vec<char>, mut alpha: i32, mut beta: i32, depth: i32, isMaximizing: bool) -> i32 {
+fn minimax_alpha_beta(curr_board: &Vec<char>, mut alpha: i32, mut beta: i32, depth: i32, is_maximizing: bool) -> i32 {
     // terminal states
 
-    let mut curr_board = currBoard.to_vec();
+    let mut curr_board = curr_board.to_vec();
 
-    if is_end(&curr_board) && isMaximizing {
+    if is_end(&curr_board) && is_maximizing {
         return 1;
-    } else if is_end(&curr_board) && !isMaximizing {
+    } else if is_end(&curr_board) && !is_maximizing {
         return -1;
     }
 
     let possible_moves: Vec<_> = curr_board.clone().into_iter().enumerate().filter(|&(x, c)| c == ' ' && x > 0).collect();
-    return if isMaximizing {
+    if is_maximizing {
         let mut best_score = i32::MIN;
         for cmove in possible_moves {
             curr_board[cmove.0] = 'X';
@@ -209,13 +209,11 @@ fn minimax_alpha_beta(currBoard: &Vec<char>, mut alpha: i32, mut beta: i32, dept
 
 #[tokio::main]
 async fn main() {
-    let mut board = [' '; (N * N + 1)].to_vec();
-
     print!("Willst du spielen? (y/n) ");
     let answer: String = read!("{}\n");
 
     if answer.to_lowercase() == "y" || answer.to_lowercase() == "yes" {
-        board = [' '; (N * N + 1)].to_vec();
+        let mut board = [' '; (N * N + 1)].to_vec();
         println!("---------------------------------------");
         game(&mut board);
 
@@ -226,28 +224,28 @@ fn game(board: &mut Vec<char>) {
 
 
     println!("Willkommen zu {}-Verliert!", N);
-    print_board(&board);
+    print_board(board);
 
-    while !is_board_full(&board) {
-        if !is_end(&board) {
+    while !is_board_full(board) {
+        if !is_end(board) {
             player_move(board);
-            print_board(&board);
+            print_board(board);
         } else {
             println!("Du hast gewonnen! Gute Arbeit!");
             break
         }
 
-        if !is_end(&board) {
+        if !is_end(board) {
             // time
             let start = Instant::now();
-            let cmove = comp_move(&board);
+            let cmove = comp_move(board);
             let duration = start.elapsed();
 
             println!("Das dauerte: {:?}", duration);
 
             mark_square('X', cmove, board);
             println!("Die künstliche \"Intelligenz\" setzt 'X' auf Position {}: ", cmove);
-            print_board(&board);
+            print_board(board);
         } else {
             println!("Sorry, dieses mal hat die KI gewonnen!");
             break
