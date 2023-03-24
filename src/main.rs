@@ -1,7 +1,7 @@
-use text_io::read;
-use std::cmp;
-use std::sync::{Mutex};
 use rayon::prelude::*;
+use std::cmp;
+use std::sync::Mutex;
+use text_io::read;
 use tokio::time::Instant;
 
 const N: usize = 4;
@@ -24,7 +24,7 @@ fn print_board(board: &[char]) {
     }
 }
 
-fn is_end(board: &Vec<char>) -> bool {
+fn is_end(board: &[char]) -> bool {
     // diagonals
 
     // top-left to bottom-right
@@ -90,24 +90,26 @@ fn is_end(board: &Vec<char>) -> bool {
     false
 }
 
-fn is_board_full(board:  &Vec<char>) -> bool {
+fn is_board_full(board: &[char]) -> bool {
     !board.contains(&' ')
 }
 
-
-fn mark_square(player: char, position: usize, board: &mut Vec<char>) {
+fn mark_square(player: char, position: usize, board: &mut [char]) {
     board[position] = player;
 }
 
-fn player_move(board: &mut Vec<char>) {
+fn player_move(board: &mut [char]) {
     let mut run = true;
 
     while run {
-        print!("Bitte wähle eine Position für dein nächstes 'X' (1-{}): ", N*N);
+        print!(
+            "Bitte wähle eine Position für dein nächstes 'X' (1-{}): ",
+            N * N
+        );
         let move_input: String = read!("{}\n");
 
         if let Ok(move_input) = move_input.parse::<usize>() {
-            if (0 < move_input) && move_input < (N*N+1) {
+            if (0 < move_input) && move_input < (N * N + 1) {
                 if board[move_input] == ' ' {
                     run = false;
                     mark_square('X', move_input, board);
@@ -115,7 +117,7 @@ fn player_move(board: &mut Vec<char>) {
                     println!("Sorry, diese Position ist schon besetzt!");
                 }
             } else {
-                println!("Du musst bitte eine Position von 1 bis {} wählen!", N*N)
+                println!("Du musst bitte eine Position von 1 bis {} wählen!", N * N)
             }
         } else {
             println!("Bitte gib eine Zahl ein!")
@@ -123,35 +125,36 @@ fn player_move(board: &mut Vec<char>) {
     }
 }
 
-fn comp_move(board: &Vec<char>) -> usize {
-    let possible_moves: Vec<_> = board.iter().enumerate().filter(|&(x, c)| *c == ' ' && x > 0).collect();
+fn comp_move(board: &[char]) -> usize {
+    let possible_moves: Vec<_> = board
+        .iter()
+        .enumerate()
+        .filter(|&(x, c)| *c == ' ' && x > 0)
+        .collect();
 
     println!("Mögliche Züge für die \"KI\": {:?}", possible_moves);
 
     let best_score = Mutex::new(i32::MIN);
     let best_move = Mutex::new(0);
 
-    let board_copy = board.clone();
-
     possible_moves.into_par_iter().for_each(|cmove| {
+        let mut board = board.to_vec();
 
-        let mut move_board_copy = board_copy.clone();
-
-        move_board_copy[cmove.0] = 'X';
+        board[cmove.0] = 'X';
 
         // use minimax
-        let score = minimax_alpha_beta(&board_copy, i32::MIN, i32::MAX, 0, false);
+        let score = minimax_alpha_beta(&board, i32::MIN, i32::MAX, 0, false);
         println!("Bewertung von Zug {}: {}", cmove.0, score);
 
-        let mut score_res =  best_score.lock().unwrap();
-        let mut best_move_res =  best_move.lock().unwrap();
+        let mut score_res = best_score.lock().unwrap();
+        let mut best_move_res = best_move.lock().unwrap();
         if score > *score_res {
             *score_res = score;
             *best_move_res = cmove.0;
             println!("{:?}", cmove);
         }
 
-        move_board_copy[cmove.0] = ' ';
+        board[cmove.0] = ' ';
     });
 
     let return_value = best_move.lock().unwrap();
@@ -159,7 +162,13 @@ fn comp_move(board: &Vec<char>) -> usize {
     *return_value
 }
 
-fn minimax_alpha_beta(curr_board: &Vec<char>, mut alpha: i32, mut beta: i32, depth: i32, is_maximizing: bool) -> i32 {
+fn minimax_alpha_beta(
+    curr_board: &[char],
+    mut alpha: i32,
+    mut beta: i32,
+    depth: i32,
+    is_maximizing: bool,
+) -> i32 {
     // terminal states
 
     let mut curr_board = curr_board.to_vec();
@@ -170,7 +179,13 @@ fn minimax_alpha_beta(curr_board: &Vec<char>, mut alpha: i32, mut beta: i32, dep
         return -1;
     }
 
-    let possible_moves: Vec<_> = curr_board.clone().into_iter().enumerate().filter(|&(x, c)| c == ' ' && x > 0).collect();
+    let possible_moves: Vec<_> = curr_board
+        .clone()
+        .into_iter()
+        .enumerate()
+        .filter(|&(x, c)| c == ' ' && x > 0)
+        .collect();
+
     if is_maximizing {
         let mut best_score = i32::MIN;
         for cmove in possible_moves {
@@ -183,7 +198,7 @@ fn minimax_alpha_beta(curr_board: &Vec<char>, mut alpha: i32, mut beta: i32, dep
             alpha = cmp::max(alpha, best_score);
 
             if beta <= alpha {
-                break
+                break;
             }
         }
         best_score
@@ -199,7 +214,7 @@ fn minimax_alpha_beta(curr_board: &Vec<char>, mut alpha: i32, mut beta: i32, dep
             beta = cmp::min(beta, best_score);
 
             if beta <= alpha {
-                break
+                break;
             }
         }
 
@@ -216,13 +231,10 @@ async fn main() {
         let mut board = [' '; (N * N + 1)].to_vec();
         println!("---------------------------------------");
         game(&mut board);
-
     }
 }
 
-fn game(board: &mut Vec<char>) {
-
-
+fn game(board: &mut [char]) {
     println!("Willkommen zu {}-Verliert!", N);
     print_board(board);
 
@@ -232,7 +244,7 @@ fn game(board: &mut Vec<char>) {
             print_board(board);
         } else {
             println!("Du hast gewonnen! Gute Arbeit!");
-            break
+            break;
         }
 
         if !is_end(board) {
@@ -244,12 +256,14 @@ fn game(board: &mut Vec<char>) {
             println!("Das dauerte: {:?}", duration);
 
             mark_square('X', cmove, board);
-            println!("Die künstliche \"Intelligenz\" setzt 'X' auf Position {}: ", cmove);
+            println!(
+                "Die künstliche \"Intelligenz\" setzt 'X' auf Position {}: ",
+                cmove
+            );
             print_board(board);
         } else {
             println!("Sorry, dieses mal hat die KI gewonnen!");
-            break
+            break;
         }
     }
-
 }
